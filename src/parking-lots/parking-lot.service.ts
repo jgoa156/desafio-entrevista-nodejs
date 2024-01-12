@@ -1,10 +1,12 @@
-import { ConflictException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
-import { ParkingLot } from './entities/parking-lot.entity';
-import { VehicleService } from 'src/vehicles/vehicle.service';
-import { Vehicle } from 'src/vehicles/entities/vehicle.entity';
-import { CustomHttpException } from 'src/common/CustomHttpException.exception';
+import { ConflictException, HttpStatus, Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { IsNull, Not, Repository, ArrayContains } from "typeorm";
+import { ParkingLot } from "./entities/parking-lot.entity";
+import { VehicleService } from "src/vehicles/vehicle.service";
+import { CustomHttpException } from "src/common/CustomHttpException.exception";
+import { ParkingTicketService } from "src/parking-tickets/parking-ticket.service";
+import { TicketsFilter } from "src/common/enums.enum";
+import { ParkingTicket } from "src/parking-tickets/entities/parking-ticket.entity";
 
 @Injectable()
 export class ParkingLotService {
@@ -13,15 +15,17 @@ export class ParkingLotService {
 		private readonly parkingLotRepository: Repository<ParkingLot>,
 
 		private readonly vehicleService: VehicleService,
+
+		private readonly parkingTicketService: ParkingTicketService,
 	) { }
 
 	// Core methods
-	async findAll(): Promise<ParkingLot[]> {
-		return await this.parkingLotRepository.find({ relations: ["vehicles"] });
+	async findAll(tickets?: TicketsFilter): Promise<ParkingLot[]> {
+		return await this.filterTickets(tickets)().getMany();
 	}
 
-	async findOne(id: number): Promise<ParkingLot | undefined> {
-		return await this.parkingLotRepository.findOne({ where: { id }, relations: ["vehicles"] });
+	async findOne(id: number, tickets: TicketsFilter = TicketsFilter.NONE): Promise<ParkingLot | undefined> {
+		return await this.filterTickets(tickets)().andWhere('parkingLot.id = :id', { id }).getOneOrFail();
 	}
 
 	async create(parkingLot: ParkingLot): Promise<ParkingLot> {
@@ -32,8 +36,8 @@ export class ParkingLotService {
 		return await this.parkingLotRepository.save(parkingLot);
 	}
 
-	async addVehicle(id: number, vehicleId: number): Promise<ParkingLot | undefined> {
-		const parkingLot = await this.findOne(id);
+	async parkVehicle(id: number, vehicleId: number): Promise<ParkingLot | undefined | any> {
+		const parkingLot = await this.findOne(id, TicketsFilter.ALL); // Should be TicketsFilter.OPEN, read line 143
 		if (!parkingLot) {
 			throw new NotFoundException("Parking Lot doesn't exist");
 		}
@@ -44,7 +48,8 @@ export class ParkingLotService {
 		}
 
 		// Checking if vehicle is already in this parking lot
-		if (vehicle.parkingLot && vehicle.parkingLot.id === parkingLot.id) {
+		const currentParkingTicket = await this.parkingTicketService.findCurrentTicket(vehicle.id);
+		if (currentParkingTicket && currentParkingTicket.parkingLot.id == parkingLot.id) {
 			throw new CustomHttpException("Vehicle already in this parking lot", 202);
 		}
 
@@ -56,27 +61,118 @@ export class ParkingLotService {
 			/* For this scenario, we ignore if the vehicle is in another parking lot,
 			simply moving it to this one */
 
-			vehicle.parkingLot = parkingLot;
-			await this.vehicleService.save(vehicle);
+			// Closing previous parking ticket, if there is one
+			if (currentParkingTicket) {
+				currentParkingTicket.exitTime = new Date();
+				await this.parkingTicketService.save(currentParkingTicket);
+			}
 
-			return await this.findOne(id);
+			// Creating parking ticket
+			const newParkingTicket = await this.parkingTicketService.create(parkingLot, vehicle);
+
+			return {
+				message: "Vehicle parked successfully",
+				parkingTicket: {
+					...newParkingTicket,
+					parkingLot: { ...newParkingTicket.parkingLot, parkingTickets: undefined },
+					vehicle: { ...newParkingTicket.vehicle }
+				}
+			};
 		}
 
 		throw new ConflictException(`${vehicle.type} capacity is full`);
 	}
 
-	async empty(id: number): Promise<ParkingLot | undefined> {
-		const parkingLot = await this.findOne(id);
+	async empty(id: number): Promise<ParkingLot | undefined | any> {
+		const parkingLot = await this.findOne(id, TicketsFilter.ALL);
 		if (!parkingLot) {
 			throw new NotFoundException("Parking Lot doesn't exist");
 		}
 
-		await parkingLot.vehicles.forEach(async (vehicle) => {
-			vehicle.parkingLot = null;
-			await this.vehicleService.save(vehicle);
+		await parkingLot.parkingTickets.forEach(async (ticket) => {
+			if (ticket.exitTime == null) {
+				ticket.exitTime = new Date();
+				await this.parkingTicketService.save(ticket);
+			}
 		});
 
-		return { ...await this.findOne(id), vehicles: [] };
+		return { message: "Parking lot emptied successfully" };
+	}
+
+	async summary(id: number, date: string, perHour: boolean): Promise<any> {
+		const tickets = await this.parkingTicketService.findAllTicketsByParkingLot(id, date);
+
+		const _date = date == "alltime" ? null : new Date(date);
+		const start = date == "alltime" ? new Date(new Date(-8640000000000000).setUTCHours(0, 0, 0, 0)) : new Date(_date.setUTCHours(0, 0, 0, 0));
+		const end = date == "alltime" ? new Date(new Date().setUTCHours(23, 59, 59, 999)) : new Date(_date.setUTCHours(23, 59, 59, 999));
+
+		const isBetween = (hour: Date, start: Date, end: Date) => hour >= start && hour <= end;
+
+		function countTickets() {
+			let carsParked = 0;
+			let carsUnparked = 0;
+			let motorcyclesParked = 0;
+			let motorcyclesUnparked = 0;
+
+			tickets.forEach((ticket) => {
+				if (ticket.entryTime && isBetween(ticket.entryTime, start, end)) {
+					if (ticket.vehicle.type == "car") carsParked++;
+					else motorcyclesParked++;
+				}
+
+				if (ticket.exitTime && isBetween(ticket.exitTime, start, end)) {
+					if (ticket.vehicle.type == "car") carsUnparked++;
+					else motorcyclesUnparked++;
+				}
+			});
+
+			return {
+				carsParked,
+				carsUnparked,
+				motorcyclesParked,
+				motorcyclesUnparked
+			};
+		}
+
+		function countTicketsPerHour() {
+			let _hour;
+			let countsTemplate = {
+				carsParked: 0,
+				carsUnparked: 0,
+				motorcyclesParked: 0,
+				motorcyclesUnparked: 0
+			};
+
+			let info = {};
+
+			tickets.forEach((ticket) => {
+				if (ticket.entryTime && isBetween(ticket.entryTime, start, end)) {
+					_hour = ticket.entryTime.getHours();
+
+					if (!info.hasOwnProperty(_hour)) {
+						info[_hour] = { ...countsTemplate };
+					}
+
+					if (ticket.vehicle.type == "car") info[_hour].carsParked++;
+					else info[_hour].motorcyclesParked++;
+				}
+
+				if (ticket.exitTime && isBetween(ticket.exitTime, start, end)) {
+					_hour = ticket.exitTime.getHours();
+
+					if (!info.hasOwnProperty(_hour)) {
+						info[_hour] = { ...countsTemplate };
+					}
+
+					if (ticket.vehicle.type == "car") info[_hour].carsUnparked++;
+					else info[_hour].motorcyclesUnparked++;
+				}
+			});
+
+			return info;
+		}
+
+		return perHour.toString() === "true" ? countTicketsPerHour() : countTickets();
 	}
 
 	async update(id: number, parkingLot: ParkingLot): Promise<ParkingLot | undefined> {
@@ -97,6 +193,32 @@ export class ParkingLotService {
 	}
 
 	// Extra methods
+	filterTickets(tickets: TicketsFilter) {
+		/* Note: I did want to use the repository method but the nested
+		where condition simply did not work. Here's a thread on GitHub
+		where people are discussing the same problem I encountered:
+		https://github.com/typeorm/typeorm/issues/3890 */
+
+		const filterOptions = {
+			"all": () => this.parkingLotRepository
+				.createQueryBuilder("parkingLot")
+				.leftJoinAndSelect("parkingLot.parkingTickets", "parkingTickets")
+				.leftJoinAndSelect("parkingTickets.vehicle", "vehicle"),
+			"open": () => this.parkingLotRepository.createQueryBuilder("parkingLot")
+				.leftJoinAndSelect("parkingLot.parkingTickets", "parkingTickets")
+				.leftJoinAndSelect("parkingTickets.vehicle", "vehicle")
+				.andWhere('parkingTickets.exitTime IS NULL'),
+			"closed": () => this.parkingLotRepository.createQueryBuilder("parkingLot")
+				.leftJoinAndSelect("parkingLot.parkingTickets", "parkingTickets")
+				.leftJoinAndSelect("parkingTickets.vehicle", "vehicle")
+				.andWhere('parkingTickets.exitTime IS NOT NULL'),
+			"none": () => this.parkingLotRepository
+				.createQueryBuilder("parkingLot")
+		};
+
+		return filterOptions[tickets];
+	}
+
 	async isCnpjDuplicated(cnpj: string, id: number | null = null): Promise<boolean> {
 		let existingParkingLot;
 
@@ -111,8 +233,8 @@ export class ParkingLotService {
 
 	async countVehicles(parkingLot: ParkingLot): Promise<any> {
 		return {
-			cars: parkingLot.vehicles.reduce((count: number, vehicle: Vehicle) => count + (vehicle.type == "car" ? 1 : 0), 0) as number,
-			motorcycles: parkingLot.vehicles.reduce((count: number, vehicle: Vehicle) => count + (vehicle.type == "motorcycle" ? 1 : 0), 0) as number
+			cars: parkingLot.parkingTickets.reduce((count: number, ticket: ParkingTicket) => count + (ticket.vehicle.type == "car" && ticket.exitTime == null ? 1 : 0), 0) as number,
+			motorcycles: parkingLot.parkingTickets.reduce((count: number, ticket: ParkingTicket) => count + (ticket.vehicle.type == "motorcycle" && ticket.exitTime == null ? 1 : 0), 0) as number
 		}
 	}
 }
