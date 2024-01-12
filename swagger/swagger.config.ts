@@ -1,8 +1,8 @@
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 export const swaggerConfig = new DocumentBuilder()
-	.setTitle('Your API Title')
-	.setDescription('Your API Description')
+	.setTitle('Parking Lot REST API')
+	.setDescription('Parking Lot REST API made using NodeJS, NestJS, TypeORM and MySQL')
 	.setVersion('1.0')
 	.build();
 
