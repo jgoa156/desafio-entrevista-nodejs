@@ -1,10 +1,10 @@
 # Sobre a execução do projeto
 
 # Considerações
-Não foi possível implementar a autenticação JWT ou a containerização do sistema, tampouco foi possível hospedar o sistema no Google Cloud. O motivo principal foi falta de tempo.
-Caso necessário, posso mostrar outros projetos que participei onde eu pude implementar autenticação JWT. Não tenho nenhum projeto disponível no momento que esteja hospedado em GCP (apesar de já tê-lo feito).
-Entretanto, consegui implementar a contagem de entrada e saída de veículos dos estacionamentos (incluindo o agrupamento por dia, hora e tipo de veículo) e também hospedei a API na plataforma Railway, da qual tenho mais familiaridade.
-Também gostaria de explicitar que meu PRIMEIRO contato com TypeORM e NestJS se deu por meio desse teste, porém, eu já tenho 3 anos de experiência com NodeJS utilizando Express, Sequelize e, mais recentemente, Prisma.
+Não foi possível implementar a autenticação JWT ou a containerização do sistema, tampouco foi possível hospedar o sistema no Google Cloud. O motivo principal foi falta de tempo.\
+Caso necessário, posso mostrar outros projetos que participei onde eu pude implementar autenticação JWT. Não tenho nenhum projeto disponível no momento que esteja hospedado em GCP (apesar de já tê-lo feito).\
+Entretanto, consegui implementar a contagem de entrada e saída de veículos dos estacionamentos (incluindo o agrupamento por dia, hora e tipo de veículo) e também hospedei a API na plataforma Railway, da qual tenho mais familiaridade.\
+Também gostaria de explicitar que meu PRIMEIRO contato com TypeORM e NestJS se deu por meio desse teste, porém, eu já tenho 3 anos de experiência com NodeJS utilizando Express, Sequelize e, mais recentemente, Prisma.\
 
 ![Dr Consulta](https://drconsulta.com/_next/image?url=%2Fimages%2FLogo-Dr-Consulta-Branco.png&w=128&q=100 'DrConsulta')
 
