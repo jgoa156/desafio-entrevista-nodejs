@@ -1,3 +1,11 @@
+# Sobre a execução do projeto
+
+# Considerações
+Não foi possível implementar a autenticação JWT ou a containerização do sistema, tampouco foi possível hospedar o sistema no Google Cloud. O motivo principal foi falta de tempo.
+Caso necessário, posso mostrar outros projetos que participei onde eu pude implementar autenticação JWT. Não tenho nenhum projeto disponível no momento que esteja hospedado em GCP (apesar de já tê-lo feito).
+Entretanto, consegui implementar a contagem de entrada e saída de veículos dos estacionamentos (incluindo o agrupamento por dia, hora e tipo de veículo) e também hospedei a API na plataforma Railway, da qual tenho mais familiaridade.
+Também gostaria de explicitar que meu PRIMEIRO contato com TypeORM e NestJS se deu por meio desse teste, porém, eu já tenho 3 anos de experiência com NodeJS utilizando Express, Sequelize e, mais recentemente, Prisma.
+
 ![Dr Consulta](https://drconsulta.com/_next/image?url=%2Fimages%2FLogo-Dr-Consulta-Branco.png&w=128&q=100 'DrConsulta')
 
 _"Salvar vidas e cuidar das pessoas porque elas não podem esperar nas filas da saúde."_
@@ -16,7 +24,7 @@ Criar uma API REST para gerenciar um estacionamento de carros e motos.
 - NestJS ✓
 - TypeOrm ✓
 - Mysql ✓
-- Swagger [TODO]
+- Swagger ✓
 
 #### Cadastro de estabelecimento
 
@@ -54,12 +62,12 @@ Criar um cadastro de veículos com os seguintes campos: ✓
 - O retorno deverá ser em formato JSON; ✓
 - Requisições GET, POST, PUT ou DELETE, conforme a melhor prática; ✓
 - A persistência dos dados deverá ser em banco _relacional MYSQL_ ✓
-- Criar README do projeto descrevendo as tecnologias utilizadas, chamadas dos serviços e configurações necessário para executar a aplicação. [TODO]
+- Criar README do projeto descrevendo as tecnologias utilizadas, chamadas dos serviços e configurações necessário para executar a aplicação. ✓
 
 #### Ganha mais pontos
 
-- Sumário da quantidade de entrada e saída; [TODO]
-- Sumário da quantidade de entrada e saída de veículos por hora; [TODO]
+- Sumário da quantidade de entrada e saída; ✓
+- Sumário da quantidade de entrada e saída de veículos por hora; ✓
 - Criação relatórios para visão ao dono do estabelecimento; [TODO]
 - Desenvolver utilizando TDD; [TODO]
 
