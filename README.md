@@ -1,5 +1,5 @@
 # Sobre a execução do projeto
-O projeto foi hospedado em: https://desafio-entrevista-nodejs-production.up.railway.app. A documentação Swagger está disponível [aqui](https://desafio-entrevista-nodejs-production.up.railway.app/api-docs).\
+O projeto foi hospedado em: https://desafio-entrevista-nodejs-production.up.railway.app. A documentação Swagger está disponível [aqui](https://desafio-entrevista-nodejs-production.up.railway.app/api-docs).
 
 Caso seja necessário executar o projeto localmente, será necessário configurar um esquema de banco de dados no MySQL, bem como configurar as variáveis de ambiente conforme o arquivo **.env.example** ([tutorial aqui](https://blog.rocketseat.com.br/variaveis-ambiente-nodejs/)).
 Feito isso, basta executar os comandos:
