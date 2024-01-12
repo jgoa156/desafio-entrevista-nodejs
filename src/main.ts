@@ -7,6 +7,6 @@ async function bootstrap() {
 
 	createSwaggerDocument(app);
 
-	await app.listen(3000);
+	await app.listen(process.env.PORT);
 }
 bootstrap();
