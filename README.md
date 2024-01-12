@@ -7,7 +7,9 @@ Caso necessário, posso mostrar outros projetos que participei onde eu pude impl
 
 Entretanto, consegui implementar a contagem de entrada e saída de veículos dos estacionamentos (incluindo o agrupamento por dia, hora e tipo de veículo) e também hospedei a API na plataforma Railway, da qual tenho mais familiaridade.\
 
-Também gostaria de explicitar que meu PRIMEIRO contato com TypeORM e NestJS se deu por meio desse teste, porém, eu já tenho 3 anos de experiência com NodeJS utilizando Express, Sequelize e, mais recentemente, Prisma.\
+Também gostaria de explicitar que meu **PRIMEIRO** contato com TypeORM e NestJS se deu por meio desse teste, porém, eu já tenho 3 anos de experiência com NodeJS utilizando Express, Sequelize e, mais recentemente, Prisma.\
+
+A propósito, meu foco geralmente é em front-end (tenho quase 5 anos de experiência com React). Aqui minha página aliás: https://guilherme.vercel.app/.
 
 # Arquivo README original
 Abaixo, eu mantive o arquivo README original até por ter usado como marcador das funcionalidades que concluí.
